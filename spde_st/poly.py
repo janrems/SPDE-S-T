@@ -47,11 +47,15 @@ def tensor_chebyshev(a, betas, degree, scale=1.0):
     """
     s = a / scale
     bs, n = s.shape
-    table = [chebyshev_features(s[:, i : i + 1], degree).reshape(bs, degree + 1) for i in range(n)]
-    feats = []
-    for beta in betas:
-        prod = torch.ones(bs, device=a.device)
-        for i, k in enumerate(beta):
-            prod = prod * table[i][:, k]
-        feats.append(prod)
-    return torch.stack(feats, dim=1)
+    # T[:, i, k] = T_k(s_i)
+    table = torch.stack(
+        [chebyshev_features(s[:, i : i + 1], degree).reshape(bs, degree + 1) for i in range(n)],
+        dim=1,
+    )  # [bs, n, degree+1]
+    idx = torch.as_tensor(betas, device=a.device, dtype=torch.long)  # [n_feat, n]
+    # product over variables of the selected Chebyshev order; loop over n vars
+    # (small), vectorized over features -- much faster than looping per feature.
+    result = torch.ones(bs, idx.shape[0], device=a.device)
+    for i in range(n):
+        result = result * table[:, i, :][:, idx[:, i]]  # [bs, n_feat]
+    return result

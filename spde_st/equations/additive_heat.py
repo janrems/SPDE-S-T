@@ -1,6 +1,6 @@
 """Additive-noise stochastic heat equation, S-transformed and time-reversed.
 
-Physical SPDE on the torus D = [0,1]:  d_t U = Lap U + Wdot,  U(0,.) = u_0.
+Physical SPDE:  d_t U = Lap U + Wdot,  U(0,.) = u_0.
 S-transform (truncated to N modes) gives the deterministic, a-parametrized IVP
     d_t u = Lap u + h_a,   u(0,.) = u_0,   h_a = sum_k a_k e_k.
 To use the terminal-value BSDE solver we time-reverse: v(tau,x) = u(T-tau,x)
@@ -9,14 +9,17 @@ Kolmogorov problem this is an FBSDE with dX = sqrt(2) dW (generator Lap),
 terminal g = u_0, driver f = h_a(T-tau,.). The solver returns v; physical
 u(t,x) = v(T-t,x).
 
-We use time-constant Fourier space modes e_k(s,y) = phi_k(y) (so the driver is
+We use time-constant space modes e_k(s,y) = phi_k(y) (so the driver is
 time-independent and the T-tau flip is a no-op here; time modes are a later
-extension). phi for "sin"/"cos" at integer frequency f is sqrt(2)*sin/cos(2 pi f x),
-a Laplacian eigenfunction with eigenvalue (2 pi f)^2. u_0 = sin(2 pi x).
+extension). phi for "sin"/"cos" at wavenumber w is sqrt(2)*sin/cos(w x), a
+Laplacian eigenfunction with eigenvalue lam = w^2. Moderate wavenumbers
+(w ~ 1, 2) keep lam small, so the chaos response is a substantial, slowly
+varying signal (large w gives near-instant decay and a tiny, ill-conditioned
+response). u_0 = u0_amp * sin(x), eigenvalue lam0 = 1.
 
 Oracle (closed form, affine in a):
     u(t,x;a) = c0(t,x) + sum_k a_k c_k(t,x),
-    c0(t,x)  = e^{-lam0 t} sin(2 pi x),        lam0 = (2 pi)^2,
+    c0(t,x)  = u0_amp e^{-t} sin(x),
     c_k(t,x) = phi_k(x) (1 - e^{-lam_k t}) / lam_k.
 So chaos order 0 is c0, order 1 are the c_k, and every order >= 2 is exactly 0.
 """
@@ -30,19 +33,24 @@ SQRT2 = float(np.sqrt(2.0))
 
 
 class AdditiveHeat(Equation):
-    def __init__(self, modes=None, x0=0.0, T=0.05):
+    def __init__(self, modes=None, x0=0.0, T=1.0, u0_amp=0.0):
+        # modes: list of (kind, wavenumber); phi = sqrt(2)*sin/cos(w x), lam = w^2
         if modes is None:
-            modes = [("sin", 1), ("cos", 1), ("sin", 2)]
+            modes = [("sin", 1.0), ("cos", 1.0), ("sin", 2.0)]
         self.modes = modes
         self.N = len(modes)
-        self.lam = [float((2 * np.pi * f) ** 2) for (_, f) in modes]
-        self.lam0 = float((2 * np.pi) ** 2)  # eigenvalue of u_0 = sin(2 pi x)
+        self.lam = [float(w**2) for (_, w) in modes]
+        self.lam0 = 1.0  # eigenvalue of u_0 = sin(x)
+        # initial condition u_0 = u0_amp * sin(x). Default 0: the solution is then
+        # the pure chaos response sum_k a_k c_k, so solve error and coefficient
+        # recovery are well conditioned (no large deterministic c0 background).
+        self.u0_amp = u0_amp
         super().__init__(x_0=[x0], T=T, dim_x=1, dim_y=1, dim_d=1)
 
     def _phi(self, x, k):
         """phi_k evaluated at x [bs,1] -> [bs,1]."""
-        kind, f = self.modes[k]
-        arg = 2 * np.pi * f * x
+        kind, w = self.modes[k]
+        arg = w * x
         base = torch.sin(arg) if kind == "sin" else torch.cos(arg)
         return SQRT2 * base
 
@@ -58,7 +66,7 @@ class AdditiveHeat(Equation):
         return SQRT2 * torch.ones(x.size(0), self.dim_x, self.dim_d)
 
     def g(self, x):
-        return torch.sin(2 * np.pi * x).reshape(-1, 1)
+        return self.u0_amp * torch.sin(x).reshape(-1, 1)
 
     def f(self, t, x, y, z, a):
         # driver h_a(x) = sum_k a_k phi_k(x); time-constant modes
@@ -73,7 +81,7 @@ class AdditiveHeat(Equation):
         return self._phi_all(x) * factors  # broadcast [bs,N] * [N]
 
     def oracle_c0(self, t, x):
-        return np.exp(-self.lam0 * t) * torch.sin(2 * np.pi * x).reshape(-1, 1)
+        return self.u0_amp * np.exp(-self.lam0 * t) * torch.sin(x).reshape(-1, 1)
 
     def oracle_u(self, t, x, a):
         """u(t,x;a) at physical time t. x [bs,1], a [bs,N] -> [bs,1]."""

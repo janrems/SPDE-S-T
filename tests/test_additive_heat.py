@@ -38,11 +38,11 @@ def test_oracle_matches_montecarlo():
     """u(t,x;a) closed form vs MC of the forward Feynman-Kac representation
     u(t,x) = E[u_0(X_t) + int_0^t h_a(X_s) ds],  dX = sqrt(2) dW from x."""
     torch.manual_seed(0)
-    base = AdditiveHeat(T=0.05)
+    base = AdditiveHeat(T=0.05, u0_amp=1.0)  # nonzero u_0 to also exercise the g term
     t, x0 = base.T, 0.3
     a = torch.tensor([[0.5, -0.3, 0.2]])
 
-    sim = AdditiveHeat(modes=base.modes, x0=x0, T=t)
+    sim = AdditiveHeat(modes=base.modes, x0=x0, T=t, u0_amp=1.0)
     M, nst = 60_000, 100
     X, _ = simulate_paths(sim, M, nst)  # [M,1,nst+1]
     dt = t / nst
