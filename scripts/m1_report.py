@@ -42,9 +42,19 @@ def main():
 
     order2_idx = [b for b in multi_indices(eq.N, 2) if sum(b) == 2]
     print(f"AdditiveHeat T={eq.T}, u0=sin(x), N={eq.N}, n_steps={N_STEPS}, itr={ITR}\n")
-    head = ["t", "u_rmse", "|u|rms", "u_rel", "c0_rmse", "ck_rmse", "|ck|rms", "ck_rel", "ord2_rmse"]
+    head = [
+        "t",
+        "u_rmse",
+        "|u|rms",
+        "u_rel",
+        "c0_rmse",
+        "ck_rmse",
+        "|ck|rms",
+        "ck_rel",
+        "ord2_rmse",
+    ]
     print(" ".join(f"{h:>9}" for h in head))
-    for n in range(N_STEPS):
+    for n in range(1, N_STEPS):  # skip n=0: point support at tau=0
         t = eq.T - eq.T * n / N_STEPS
         X, _ = simulate_paths(eq, M, N_STEPS)
         x = X[:, :, n]

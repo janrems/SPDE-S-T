@@ -64,6 +64,7 @@ class DBDPSolver:
         self.dim_in = eq.dim_x + 1 + self.n_param  # state + time + parameter a
         self.dim_out = eq.dim_y + eq.dim_y * eq.dim_d  # y and z
         self.nets = {}  # n -> trained module
+        self.loss_history = {}  # n -> list of per-iteration losses
         self.mu, self.sd = path_stats(eq, n_steps, n_samples=stats_samples)
 
     def _features(self, x, n, a):
@@ -105,6 +106,7 @@ class DBDPSolver:
             if n < self.n_steps - 1:
                 net.load_state_dict(self.nets[n + 1].state_dict())
             opt = torch.optim.Adam(net.parameters(), self.lr)
+            hist = []
             for it in range(itr):
                 X, dW = simulate_paths(self.eq, batch_size, self.n_steps)
                 a = None if self.param_sampler is None else self.param_sampler(batch_size)
@@ -112,10 +114,12 @@ class DBDPSolver:
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
+                hist.append(float(loss))
                 if verbose and it % 200 == 0:
                     print(f"step {n} itr {it} loss {float(loss):.4e}")
             net.eval()
             self.nets[n] = net
+            self.loss_history[n] = hist
         return self
 
     def predict_u(self, x, n, a=None):
