@@ -28,20 +28,34 @@ def test_path_stats_shapes():
 
 def test_yz_shapes():
     eq = LinearHeat(dim=1)
-    solver = DBDPSolver(eq, mlp_factory(dim_h=8), N=4, stats_samples=2000)
+    solver = DBDPSolver(eq, mlp_factory(dim_h=8), n_steps=4, stats_samples=2000)
     net = solver.net_factory(solver.dim_in, solver.dim_out)
-    X, _ = simulate_paths(eq, 6, solver.N)
-    y, z = solver._yz(net, X[:, :, 1], 1)
+    X, _ = simulate_paths(eq, 6, solver.n_steps)
+    y, z = solver._yz(net, X[:, :, 1], 1, a=None)
     assert y.shape == (6, eq.dim_y)
     assert z.shape == (6, eq.dim_y, eq.dim_d)
 
 
+def test_param_threading():
+    """A param_sampler grows the net input and reaches predict; training runs."""
+    eq = LinearHeat(dim=1)  # ignores a, but a must still thread through
+    sampler = lambda bs: torch.zeros(bs, 2)  # noqa: E731
+    solver = DBDPSolver(
+        eq, mlp_factory(dim_h=8), n_steps=3, stats_samples=2000, param_sampler=sampler
+    )
+    assert solver.n_param == 2
+    assert solver.dim_in == eq.dim_x + 1 + 2
+    solver.train(batch_size=64, itr=20)
+    pred = solver.predict_u(eq.x_0.view(1, -1), 0, a=torch.zeros(1, 2))
+    assert torch.isfinite(pred).all()
+
+
 def test_step_loss_finite_and_differentiable():
     eq = LinearHeat(dim=1)
-    solver = DBDPSolver(eq, mlp_factory(dim_h=8), N=4, stats_samples=2000)
+    solver = DBDPSolver(eq, mlp_factory(dim_h=8), n_steps=4, stats_samples=2000)
     net = solver.net_factory(solver.dim_in, solver.dim_out)
-    X, dW = simulate_paths(eq, 16, solver.N)
-    loss = solver.step_loss(net, X, dW, n=solver.N - 1)  # terminal target
+    X, dW = simulate_paths(eq, 16, solver.n_steps)
+    loss = solver.step_loss(net, X, dW, n=solver.n_steps - 1, a=None)  # terminal target
     assert torch.isfinite(loss)
     loss.backward()
     grads = [p.grad for p in net.parameters() if p.grad is not None]

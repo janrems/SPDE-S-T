@@ -19,16 +19,16 @@ from tests.fixtures import LinearHeat
 def trained():
     torch.manual_seed(0)
     eq = LinearHeat(x0=1.0, T=1.0, dim=1)
-    solver = DBDPSolver(eq, mlp_factory(dim_h=32), N=6, lr=1e-3, stats_samples=20_000)
+    solver = DBDPSolver(eq, mlp_factory(dim_h=32), n_steps=6, lr=1e-3, stats_samples=20_000)
     solver.train(batch_size=512, itr=1500)
     return eq, solver
 
 
 def test_interior_matches_oracle(trained):
     eq, solver = trained
-    n_eval = solver.N // 2
-    t = eq.T * n_eval / solver.N
-    X, _ = simulate_paths(eq, 4096, solver.N)
+    n_eval = solver.n_steps // 2
+    t = eq.T * n_eval / solver.n_steps
+    X, _ = simulate_paths(eq, 4096, solver.n_steps)
     x = X[:, :, n_eval]
     err = relative_l2(eq.oracle(x, t), solver.predict_u(x, n_eval))
     assert err < 0.05, f"interior relative L2 = {err:.4f}"

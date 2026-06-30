@@ -40,8 +40,13 @@ class Equation(ABC):
         """Diffusion matrix, returns [bs, dim_x, dim_d]."""
 
     @abstractmethod
-    def f(self, t, x, y, z):
-        """BSDE driver, returns [bs, dim_y]."""
+    def f(self, t, x, y, z, a=None):
+        """BSDE driver, returns [bs, dim_y].
+
+        a is the static parameter [bs, N] (the truncated S-transform variable),
+        or None for non-parametric problems. Equations that ignore a accept it
+        for interface uniformity.
+        """
 
     @abstractmethod
     def g(self, x):

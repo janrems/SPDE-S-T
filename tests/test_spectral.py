@@ -64,7 +64,9 @@ def test_integrates_with_solver():
     """Spectral net plugs into the solver via the factory and predicts finite values."""
     torch.manual_seed(0)
     eq = LinearHeat(dim=1)
-    solver = DBDPSolver(eq, spectral_factory(dim_spectral=1, degree=4), N=3, stats_samples=2000)
+    solver = DBDPSolver(
+        eq, spectral_factory(dim_spectral=1, degree=4), n_steps=3, stats_samples=2000
+    )
     solver.train(batch_size=128, itr=50)
     pred = solver.predict_u(eq.x_0.view(1, -1), 0)
     assert torch.isfinite(pred).all()

@@ -27,7 +27,7 @@ class LinearHeat(Equation):
         bs = x.size(0)
         return torch.eye(self.dim_x).unsqueeze(0).expand(bs, self.dim_x, self.dim_d)
 
-    def f(self, t, x, y, z):
+    def f(self, t, x, y, z, a=None):
         return torch.zeros(x.size(0), self.dim_y)
 
     def g(self, x):

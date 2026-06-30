@@ -25,7 +25,7 @@ N, ITR = 6, 5000
 def train(factory, seed=0):
     torch.manual_seed(seed)
     eq = LinearHeat(x0=1.0, T=1.0, dim=1)
-    solver = DBDPSolver(eq, factory, N=N, lr=1e-3, stats_samples=20_000)
+    solver = DBDPSolver(eq, factory, n_steps=N, lr=1e-3, stats_samples=20_000)
     solver.train(batch_size=512, itr=ITR)
     return eq, solver
 
@@ -47,10 +47,10 @@ def derivatives(solver, n, xs):
 
 
 def report(name, eq, solver):
-    n = solver.N // 2
-    t = eq.T * n / solver.N
+    n = solver.n_steps // 2
+    t = eq.T * n / solver.n_steps
     # solve accuracy over the support
-    X, _ = simulate_paths(eq, 4096, solver.N)
+    X, _ = simulate_paths(eq, 4096, solver.n_steps)
     x = X[:, :, n]
     solve = relative_l2(eq.oracle(x, t), solver.predict_u(x, n))
     # derivatives on a grid within +-2 std of the step-n marginal
