@@ -9,24 +9,14 @@ input to validate the layer's derivative behavior.
 
 The leading `dim_spectral` inputs are treated as spectral (Chebyshev-expanded);
 any remaining inputs (e.g. time) are passed through linearly. Multivariate
-spectral input currently uses per-coordinate features (no cross terms); M1 will
-need tensor-product features for mixed multi-indices -- see TODO.
+spectral input here uses per-coordinate features (no cross terms); the chaos net
+(spde_st.nets.chaos) provides tensor-product features for mixed multi-indices.
 """
 
 import torch
 import torch.nn as nn
 
-
-def chebyshev_features(s, degree):
-    """Chebyshev polynomials T_0..T_degree of each coordinate.
-
-    s: [bs, k] -> [bs, k*(degree+1)] via T_0=1, T_1=s, T_{n+1}=2 s T_n - T_{n-1}.
-    """
-    terms = [torch.ones_like(s), s]
-    for _ in range(2, degree + 1):
-        terms.append(2 * s * terms[-1] - terms[-2])
-    stacked = torch.stack(terms, dim=-1)  # [bs, k, degree+1]
-    return stacked.reshape(s.size(0), -1)
+from spde_st.poly import chebyshev_features
 
 
 class SpectralNet(nn.Module):
