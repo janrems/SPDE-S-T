@@ -37,6 +37,24 @@ def multi_indices(n_vars, max_degree):
     return out
 
 
+def tensor_monomial(a, betas):
+    """Tensor monomial features prod_i a_i^{beta_i} -> [bs, len(betas)].
+
+    With these features and a linear head, u_theta = sum_beta W_beta a^beta, so the
+    chaos coefficients are read directly as c_beta = W_beta (no differentiation, no
+    rescaling). Ill-conditioned at high degree but the coefficients are first-class.
+    """
+    bs = a.size(0)
+    feats = []
+    for beta in betas:
+        prod = torch.ones(bs, device=a.device)
+        for i, k in enumerate(beta):
+            if k:
+                prod = prod * a[:, i] ** k
+        feats.append(prod)
+    return torch.stack(feats, dim=1)
+
+
 def tensor_chebyshev(a, betas, degree, scale=1.0):
     """Tensor-product Chebyshev features.
 

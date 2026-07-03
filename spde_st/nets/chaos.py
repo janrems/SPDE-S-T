@@ -17,12 +17,21 @@ polynomial in a (z is the gradient part the BSDE needs).
 import torch.nn as nn
 
 from spde_st.nets.mlp import MLP
-from spde_st.poly import multi_indices, tensor_chebyshev
+from spde_st.poly import multi_indices, tensor_chebyshev, tensor_monomial
 
 
 class ChaosNet(nn.Module):
     def __init__(
-        self, dim_in, dim_out, dim_x, n_param, max_degree=3, input_scale=1.0, dim_h=32, n_hidden=2
+        self,
+        dim_in,
+        dim_out,
+        dim_x,
+        n_param,
+        max_degree=3,
+        input_scale=1.0,
+        dim_h=32,
+        n_hidden=2,
+        basis="chebyshev",
     ):
         super().__init__()
         self.dim_x = dim_x
@@ -30,6 +39,7 @@ class ChaosNet(nn.Module):
         self.max_degree = max_degree
         self.input_scale = input_scale
         self.dim_out = dim_out
+        self.basis = basis  # "chebyshev" or "monomial" (monomial => c_beta = W_beta directly)
         self.betas = multi_indices(n_param, max_degree)
         self.n_feat = len(self.betas)
         # MLP maps (t,x) to the coefficient fields W for every output and feature.
@@ -39,14 +49,21 @@ class ChaosNet(nn.Module):
         xt = feat[:, : self.dim_x + 1]
         a = feat[:, self.dim_x + 1 :]
         W = self.trunk(xt).reshape(-1, self.dim_out, self.n_feat)
-        psi = tensor_chebyshev(a, self.betas, self.max_degree, self.input_scale)  # [bs, n_feat]
+        if self.basis == "monomial":
+            psi = tensor_monomial(a, self.betas)
+        else:
+            psi = tensor_chebyshev(a, self.betas, self.max_degree, self.input_scale)
         return (W * psi.unsqueeze(1)).sum(-1)  # [bs, dim_out]
 
 
-def chaos_factory(dim_x, n_param, max_degree=3, input_scale=1.0, dim_h=32, n_hidden=2):
+def chaos_factory(
+    dim_x, n_param, max_degree=3, input_scale=1.0, dim_h=32, n_hidden=2, basis="chebyshev"
+):
     """Net factory (dim_in, dim_out) -> ChaosNet. dim_x and n_param fix the input split."""
 
     def factory(dim_in, dim_out):
-        return ChaosNet(dim_in, dim_out, dim_x, n_param, max_degree, input_scale, dim_h, n_hidden)
+        return ChaosNet(
+            dim_in, dim_out, dim_x, n_param, max_degree, input_scale, dim_h, n_hidden, basis
+        )
 
     return factory
