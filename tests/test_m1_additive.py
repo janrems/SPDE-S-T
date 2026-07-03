@@ -1,9 +1,10 @@
 """M1 end-to-end: chaos-net solver recovers the additive-heat chaos coefficients.
 
-Uses the cheap well-conditioned config (small T, few steps). The full T=1
-comparison vs the MLP lives in scripts/m1_additive.py. The solution is affine
-in a, so this validates the pipeline (solve -> recover c_k -> order>=2 vanish);
-the spectral net's high-order advantage is exercised in M2 (Wick), not here.
+Uses the cheap well-conditioned config (small T, few steps) with a nontrivial
+terminal u_0 = sin(x). The full T=1 comparison vs the MLP lives in
+scripts/m1_additive.py. The solution is affine in a, so this validates the
+pipeline (solve -> recover c_0 and c_k -> order>=2 vanish); the spectral net's
+high-order advantage is exercised in M2 (Wick), not here.
 """
 
 import torch
@@ -17,7 +18,7 @@ from spde_st.recovery.coefficients import chaos_coefficients
 
 def test_chaos_pipeline_recovers_coefficients():
     torch.manual_seed(0)
-    eq = AdditiveHeat(T=0.05)  # moderate wavenumbers, well conditioned
+    eq = AdditiveHeat(T=0.05, u0_amp=1.0)  # nontrivial terminal, well conditioned
     box, n_steps = 1.0, 5
 
     def sampler(bs):
@@ -42,8 +43,11 @@ def test_chaos_pipeline_recovers_coefficients():
     # solve accuracy against the closed form
     assert relative_l2(eq.oracle_u(t, x, a), solver.predict_u(x, n, a)) < 0.15
 
-    # first-order coefficient recovery: c_(e_k) ~ c_k(t,x)
+    # order-0 (deterministic) coefficient recovery: c_0 ~ e^{-t} sin(x)
     coeffs = chaos_coefficients(solver, n, x, max_order=2)
+    assert (coeffs[(0,) * eq.N] - eq.oracle_c0(t, x).squeeze(1)).abs().mean() < 0.05, "c_0 off"
+
+    # first-order coefficient recovery: c_(e_k) ~ c_k(t,x)
     ck_true = eq._ck_fields(t, x)
     for k in range(eq.N):
         alpha = tuple(1 if i == k else 0 for i in range(eq.N))

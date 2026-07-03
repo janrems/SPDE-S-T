@@ -114,7 +114,7 @@ class DBDPSolver:
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
-                hist.append(float(loss))
+                hist.append(loss.detach().item())
                 if verbose and it % 200 == 0:
                     print(f"step {n} itr {it} loss {float(loss):.4e}")
             net.eval()
