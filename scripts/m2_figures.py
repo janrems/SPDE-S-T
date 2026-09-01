@@ -27,6 +27,7 @@ from spde_st.recovery.coefficients import chaos_coefficients
 
 N_STEPS, ITR, BOX, DEGREE, T, DIM_H = 20, 20000, 1.0, 6, 1.0, 64
 FIGDIR = ".claude/figures"
+CKPT = ".claude/m2_solver.pt"  # delete to force a retrain
 
 
 def sampler(bs):
@@ -47,7 +48,10 @@ def train(eq):
         stats_samples=20_000,
         param_sampler=sampler,
     )
+    if os.path.exists(CKPT):
+        return solver.load(CKPT)
     solver.train(batch_size=512, itr=ITR)
+    solver.save(CKPT)
     return solver
 
 
@@ -71,7 +75,6 @@ def fig_a_slice(solver, eq):
     ax.axvline(0, color="0.8", lw=0.7)
     ax.set_xlabel("$a$")
     ax.set_ylabel(f"$u(t={t:.2f}, x={x0})$")
-    ax.set_title("u vs noise parameter: the curvature is the nonlinearity")
     ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/m2_a_slice.png", dpi=130)
@@ -91,7 +94,6 @@ def fig_coeff_fields(solver, eq):
         axes[m].set_title(f"$c_{m}(x)$")
         axes[m].set_xlabel("x")
     axes[0].legend(fontsize=8)
-    fig.suptitle(f"Wick coefficient fields at t={t:.2f}: recovered vs closed form (all nonzero)")
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/m2_coeff_fields.png", dpi=130)
     plt.close(fig)
@@ -122,7 +124,6 @@ def fig_u_heatmap(solver, eq):
         ax.set_title(title)
         fig.colorbar(im, ax=ax, fraction=0.046)
     axes[0].set_ylabel("t")
-    fig.suptitle(f"Wick u(t,x) at fixed a={a_fix.item()}")
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/m2_u_heatmap.png", dpi=130)
     plt.close(fig)
@@ -136,7 +137,6 @@ def fig_loss(solver):
     ax.set_yscale("log")
     ax.set_xlabel("iteration")
     ax.set_ylabel("DBDP loss")
-    ax.set_title("Training loss per backward step (Wick, T=1)")
     ax.legend(fontsize=6, ncol=3)
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/m2_loss.png", dpi=130)

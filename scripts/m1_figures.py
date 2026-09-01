@@ -25,6 +25,7 @@ from spde_st.recovery.coefficients import chaos_coefficients
 
 N_STEPS, ITR, BOX, M = 10, 5000, 1.0, 4096
 FIGDIR = ".claude/figures"
+CKPT = ".claude/m1_solver.pt"  # delete to force a retrain
 
 
 def sampler(bs):
@@ -49,7 +50,10 @@ def train(eq):
         stats_samples=20_000,
         param_sampler=sampler,
     )
+    if os.path.exists(CKPT):
+        return solver.load(CKPT)
     solver.train(batch_size=512, itr=ITR)
+    solver.save(CKPT)
     return solver
 
 
@@ -61,7 +65,6 @@ def fig_loss(solver):
     ax.set_yscale("log")
     ax.set_xlabel("iteration")
     ax.set_ylabel("DBDP loss")
-    ax.set_title("Training loss per backward step")
     ax.legend(fontsize=7, ncol=2)
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/loss_convergence.png", dpi=130)
@@ -89,7 +92,6 @@ def fig_a_slices(solver, eq):
         ax.set_title(f"slope at 0 = $c_{k}$")
     axes[0].set_ylabel(f"$u(t={t:.2f}, x={x0})$")
     axes[0].legend(fontsize=8)
-    fig.suptitle("u vs each noise coordinate (other $a=0$): net vs oracle")
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/a_slices.png", dpi=130)
     plt.close(fig)
@@ -115,7 +117,6 @@ def fig_coeff_fields(solver, eq):
         axes[k + 1].set_title(f"order 1, mode {k}: $c_{{e_{k}}}(x)$")
     for ax in axes:
         ax.set_xlabel("x")
-    fig.suptitle(f"Coefficient fields at t={t:.2f}: recovered vs closed form")
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/coeff_fields.png", dpi=130)
     plt.close(fig)
@@ -151,7 +152,6 @@ def fig_u_heatmap(solver, eq):
         ax.set_title(title)
         fig.colorbar(im, ax=ax, fraction=0.046)
     axes[0].set_ylabel("t")
-    fig.suptitle(f"u(t,x) at fixed a={a_fix.tolist()[0]}")
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/u_heatmap.png", dpi=130)
     plt.close(fig)
@@ -181,7 +181,6 @@ def fig_error_vs_time(solver, eq):
     ax.plot(ts, ck_sig, "C3:", alpha=0.5, label="||c_k|| (signal)")
     ax.set_xlabel("t")
     ax.set_ylabel("absolute RMS")
-    ax.set_title("Absolute error and signal magnitude vs time")
     ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(f"{FIGDIR}/error_vs_time.png", dpi=130)

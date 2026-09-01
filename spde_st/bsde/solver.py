@@ -122,6 +122,38 @@ class DBDPSolver:
             self.loss_history[n] = hist
         return self
 
+    def save(self, path):
+        """Persist trained nets and frozen stats, so figures can be redrawn without retraining."""
+        torch.save(
+            {
+                "n_steps": self.n_steps,
+                "dim_in": self.dim_in,
+                "dim_out": self.dim_out,
+                "mu": self.mu,
+                "sd": self.sd,
+                "nets": {n: net.state_dict() for n, net in self.nets.items()},
+                "loss_history": self.loss_history,
+            },
+            path,
+        )
+        return self
+
+    def load(self, path):
+        """Restore a solver written by save(); equation and net factory must match."""
+        ck = torch.load(path, weights_only=False)
+        if ck["n_steps"] != self.n_steps or ck["dim_in"] != self.dim_in:
+            raise ValueError(f"{path} was written for a different grid or input dimension")
+        # reuse the saved statistics so predictions see exactly the training scaling
+        self.mu, self.sd = ck["mu"], ck["sd"]
+        self.loss_history = ck["loss_history"]
+        self.nets = {}
+        for n, state in ck["nets"].items():
+            net = self.net_factory(self.dim_in, self.dim_out)
+            net.load_state_dict(state)
+            net.eval()
+            self.nets[n] = net
+        return self
+
     def predict_u(self, x, n, a=None):
         """u(t_n, x; a). For n == n_steps returns the terminal g(x)."""
         if n == self.n_steps:

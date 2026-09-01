@@ -1,5 +1,6 @@
 """Structural tests for the DBDP solver: shapes, finite loss, gradients."""
 
+import pytest
 import torch
 
 from spde_st.bsde.solver import DBDPSolver, path_stats, simulate_paths
@@ -60,3 +61,23 @@ def test_step_loss_finite_and_differentiable():
     loss.backward()
     grads = [p.grad for p in net.parameters() if p.grad is not None]
     assert grads and all(torch.isfinite(g).all() for g in grads)
+
+
+def test_save_load_round_trip(tmp_path):
+    """A reloaded solver predicts exactly what the trained one did."""
+    eq = LinearHeat(dim=1)
+    factory = mlp_factory(dim_h=8)
+    trained = DBDPSolver(eq, factory, n_steps=3, stats_samples=2000)
+    trained.train(batch_size=64, itr=20)
+    ckpt = tmp_path / "solver.pt"
+    trained.save(ckpt)
+
+    restored = DBDPSolver(eq, factory, n_steps=3, stats_samples=2000).load(ckpt)
+    x = torch.linspace(-1, 1, 16).reshape(-1, 1)
+    for n in range(3):
+        assert torch.allclose(trained.predict_u(x, n), restored.predict_u(x, n))
+    assert restored.loss_history.keys() == trained.loss_history.keys()
+
+    # a mismatched grid must not silently load
+    with pytest.raises(ValueError):
+        DBDPSolver(eq, factory, n_steps=5, stats_samples=2000).load(ckpt)
