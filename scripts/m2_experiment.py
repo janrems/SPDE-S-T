@@ -151,7 +151,6 @@ def main():
     ax.set_yscale("log")
     ax.set_xlabel("chaos order m")
     ax.set_ylabel("relative $L^2$ error of $c_m$")
-    ax.set_title("High-order coefficient recovery")
     ax.legend()
     fig.tight_layout()
     coeff_fig = f"{FIGDIR}/m2_coeff_error{suffix}.png"
@@ -166,7 +165,6 @@ def main():
     ax.set_yscale("log")
     ax.set_xlabel("truncation order M")
     ax.set_ylabel("rel $L^2(\\Omega)$ error of reconstructed $U$")
-    ax.set_title("Reconstruction of U vs truncation order")
     ax.legend()
     fig.tight_layout()
     recon_fig = f"{FIGDIR}/m2_reconstruction{suffix}.png"
