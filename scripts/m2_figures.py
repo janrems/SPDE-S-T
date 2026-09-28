@@ -1,4 +1,4 @@
-"""M2 (Wick) figures, analogues of the additive-case figures, into .claude/figures/.
+"""M2 (Wick) figures, analogues of the additive-case figures, into figures/.
 
 Constant-mode Wick heat (exact oracle), same config as the reported T=1 run.
 Trains the monomial chaos net once and emits:
@@ -26,8 +26,8 @@ from spde_st.nets.chaos import chaos_factory
 from spde_st.recovery.coefficients import chaos_coefficients
 
 N_STEPS, ITR, BOX, DEGREE, T, DIM_H = 20, 20000, 1.0, 6, 1.0, 64
-FIGDIR = ".claude/figures"
-CKPT = ".claude/m2_solver.pt"  # delete to force a retrain
+FIGDIR = "figures"
+CKPT = "results/m2_solver.pt"  # delete to force a retrain
 
 
 def sampler(bs):
@@ -145,6 +145,7 @@ def fig_loss(solver):
 
 def main():
     os.makedirs(FIGDIR, exist_ok=True)
+    os.makedirs("results", exist_ok=True)
     eq = WickHeat(modes=[("cos", 0.0)], u0_amp=1.0, T=T)
     solver = train(eq)
     fig_a_slice(solver, eq)

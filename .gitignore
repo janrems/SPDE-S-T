@@ -1,4 +1,6 @@
 .claude/
+figures/
+results/
 .venv/
 __pycache__/
 *.pyc

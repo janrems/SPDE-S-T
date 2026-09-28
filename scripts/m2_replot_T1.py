@@ -10,6 +10,7 @@ LaTeX captions.
 Run: PYTHONPATH=. uv run python scripts/m2_replot_T1.py
 """
 
+import os
 import re
 
 import matplotlib
@@ -17,8 +18,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-RESULTS = ".claude/m2_results_T1.txt"
-FIGDIR = ".claude/figures"
+RESULTS = "results/m2_results_T1.txt"
+FIGDIR = "figures"
 SUFFIX = "_T1"
 STYLE = {
     "chaos": ("C0-o", "chaos (polynomial, exact deriv)"),
@@ -64,6 +65,7 @@ def plot(data, key, xlabel, ylabel, out):
 
 
 if __name__ == "__main__":
+    os.makedirs(FIGDIR, exist_ok=True)
     data = parse(RESULTS)
     assert set(data) == {"chaos", "mlp"}, f"expected both nets, got {sorted(data)}"
     for kind in data:

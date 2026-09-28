@@ -1,4 +1,4 @@
-"""Generate M1 figures into .claude/figures/ (gitignored, embedded in results.html).
+"""Generate M1 figures into figures/ (gitignored).
 
 Trains the chaos-net solver once on additive heat (nontrivial terminal) and emits:
   loss_convergence.png  - per-step training loss vs iteration
@@ -24,8 +24,8 @@ from spde_st.nets.chaos import chaos_factory
 from spde_st.recovery.coefficients import chaos_coefficients
 
 N_STEPS, ITR, BOX, M = 10, 5000, 1.0, 4096
-FIGDIR = ".claude/figures"
-CKPT = ".claude/m1_solver.pt"  # delete to force a retrain
+FIGDIR = "figures"
+CKPT = "results/m1_solver.pt"  # delete to force a retrain
 
 
 def sampler(bs):
@@ -189,6 +189,7 @@ def fig_error_vs_time(solver, eq):
 
 def main():
     os.makedirs(FIGDIR, exist_ok=True)
+    os.makedirs("results", exist_ok=True)
     eq = AdditiveHeat(u0_amp=1.0)
     solver = train(eq)
     fig_loss(solver)

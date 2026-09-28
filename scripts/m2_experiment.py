@@ -14,8 +14,8 @@ written to disk; nothing needs to stay attached while it runs.
     PYTHONPATH=. uv run python scripts/m2_experiment.py --itr 4000 --n_steps 8   # quick
 
 Outputs:
-    .claude/m2_results.txt            table + config
-    .claude/figures/m2_coeff_error.png
+    results/m2_results.txt            table + config
+    figures/m2_coeff_error.png
 """
 
 import argparse
@@ -35,8 +35,8 @@ from spde_st.nets.chaos import chaos_factory
 from spde_st.nets.mlp import mlp_factory
 from spde_st.recovery.coefficients import chaos_coefficients
 
-FIGDIR = ".claude/figures"
-RESULTS = ".claude/m2_results.txt"
+FIGDIR = "figures"
+RESULTS = "results/m2_results.txt"
 
 
 def parse():
@@ -88,7 +88,12 @@ def evaluate(solver, sampler, eq, args):
         exact = eq.oracle_coeff_exact(t, x, m).squeeze(1)
         hat = coeffs[(m,)]
         rows.append(
-            (m, float(exact.abs().mean()), relative_l2(exact, hat), float((hat - exact).abs().mean()))
+            (
+                m,
+                float(exact.abs().mean()),
+                relative_l2(exact, hat),
+                float((hat - exact).abs().mean()),
+            )
         )
 
     # U reconstruction error in L^2(Omega): ||U - sum_{m<=M} hat c_m H_m|| / ||U||,
@@ -111,6 +116,7 @@ def evaluate(solver, sampler, eq, args):
 def main():
     args = parse()
     os.makedirs(FIGDIR, exist_ok=True)
+    os.makedirs("results", exist_ok=True)
     eq = WickHeat(modes=[("cos", 0.0)], u0_amp=1.0, T=args.T)  # constant mode, exact oracle
 
     lines = [
@@ -141,7 +147,10 @@ def main():
     with open(results_path, "w") as fh:
         fh.write(report + "\n")
 
-    style = {"chaos": ("C0-o", "chaos (polynomial, exact deriv)"), "mlp": ("C3-s", "MLP (autodiff deriv)")}
+    style = {
+        "chaos": ("C0-o", "chaos (polynomial, exact deriv)"),
+        "mlp": ("C3-s", "MLP (autodiff deriv)"),
+    }
 
     # figure 1: coefficient relative error vs order
     fig, ax = plt.subplots(figsize=(7, 4))

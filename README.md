@@ -77,12 +77,12 @@ Scripts need the package on the path:
 Run with no flags to reproduce the reported configuration; every script's
 defaults are the values in the paper's hyperparameter table.
 
-Output goes to `.claude/` (figures under `.claude/figures/`), which is
-gitignored.
+Figures are written to `figures/`, and result tables and solver checkpoints to
+`results/`. Both directories are gitignored.
 
 `m1_figures.py` and `m2_figures.py` write a checkpoint of the trained solver on
 their first run and reuse it afterwards, so re-rendering a figure does not
-repeat the training. Delete the `.pt` file to force a retrain.
+repeat the training. Delete the `.pt` file in `results/` to force a retrain.
 
 ## Notes
 
