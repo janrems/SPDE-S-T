@@ -46,7 +46,7 @@ def parse():
     p.add_argument("--box", type=float, default=1.0)
     p.add_argument("--degree", type=int, default=6)
     p.add_argument("--max_order", type=int, default=4)
-    p.add_argument("--T", type=float, default=0.5)
+    p.add_argument("--T", type=float, default=1.0)  # the value reported in the paper
     p.add_argument("--dim_h", type=int, default=64)
     p.add_argument("--batch", type=int, default=512)
     p.add_argument("--lr", type=float, default=1e-3)

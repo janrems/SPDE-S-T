@@ -5,7 +5,7 @@ Code accompanying the paper
 > **NeSTR: Neural S-Transform Reconstruction for Gaussian SPDEs**
 > Nacira Agram, Fred Espen Benth, Jan Rems
 
-<!-- TODO: preprint link -->
+Preprint: <https://arxiv.org/abs/2609.23001>
 
 ## What it does
 
@@ -63,15 +63,19 @@ Scripts need the package on the path:
 
 ## Scripts
 
-| script | what it produces |
-| --- | --- |
-| `m0_compare.py` | deterministic benchmark: MLP vs polynomial net, solve accuracy and derivative quality |
-| `m1_additive.py` | additive heat end to end: solve, recover coefficients, compare against the oracle |
-| `m1_report.py` | per-time-slice accuracy of the learned map and of the recovered coefficients |
-| `m1_figures.py` | the additive-case figures |
-| `m2_experiment.py` | Wick high-order recovery, polynomial net vs MLP; writes a results table and two comparison figures |
-| `m2_figures.py` | the Wick-case figures |
-| `m2_replot_T1.py` | redraws the two comparison figures from a stored `m2_experiment.py` results file, without retraining |
+| script | paper item | what it produces |
+| --- | --- | --- |
+| `m0_error.py` | Example 1 | relative L2 error of the learned solution against the closed form, per time level |
+| `m1_figures.py` | Example 2 | the five additive-case figures |
+| `m1_report.py` | Example 2 | the per-time-slice error table |
+| `m2_figures.py` | Example 3 | the coefficient-field, heatmap and loss figures |
+| `m2_experiment.py` | Example 3 | coefficient recovery and reconstruction, polynomial net vs MLP: both tables and both comparison figures |
+| `m2_replot_T1.py` | Example 3 | redraws the two comparison figures from a stored `m2_experiment.py` results file, without retraining |
+| `m0_compare.py` | — | side comparison of polynomial net vs MLP derivative quality on the deterministic problem; not the Example 1 run |
+| `m1_additive.py` | — | additive heat end to end, used while developing the pipeline |
+
+Run with no flags to reproduce the reported configuration; every script's
+defaults are the values in the paper's hyperparameter table.
 
 Output goes to `.claude/` (figures under `.claude/figures/`), which is
 gitignored.
